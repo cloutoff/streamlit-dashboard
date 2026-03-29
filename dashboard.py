@@ -200,7 +200,7 @@ with col2:
 # -----------------------------
 # Map (Historical + Latest)
 # -----------------------------
-st.subheader("All Aircraft Positions in Perak (Historical & Latest)")
+st.subheader("All Aircraft Positions in Perak")
 
 m = folium.Map(location=[4.75, 101.0], zoom_start=7)
 
