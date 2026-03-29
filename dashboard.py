@@ -41,14 +41,19 @@ def generate_fake_dataframe():
     records_flights = []
     records_counts = []
 
-    dates = ["2026-03-27", "2026-03-29"]
+    # Dates with different max aircraft counts
+    dates_limits = {
+        "2026-03-27": 8,  # up to 8 aircraft
+        "2026-03-28": 4,  # up to 4 aircraft
+        "2026-03-29": 8   # up to 8 aircraft
+    }
 
-    for date_str in dates:
+    for date_str, max_count in dates_limits.items():
         current_time = datetime.strptime(date_str + " 00:00", "%Y-%m-%d %H:%M")
         end_time = datetime.strptime(date_str + " 23:59", "%Y-%m-%d %H:%M")
 
         while current_time <= end_time:
-            aircraft_count = random.randint(0, 8)
+            aircraft_count = random.randint(0, max_count)
 
             for _ in range(aircraft_count):
                 records_flights.append({
