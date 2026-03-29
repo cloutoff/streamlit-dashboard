@@ -14,9 +14,7 @@ DATABASE_FILE = "perak_flights.db"
 # -----------------------------
 # CONFIG
 # -----------------------------
-USE_FAKE_DISPLAY = True  # True: show fake data; False: use real database
-DATES_TO_DISPLAY = ["2026-03-27", "2026-03-28", "2026-03-29"]  # only these 3 dates
-KEY_HOURS = [12, 15, 18, 21]  # only these times per day
+USE_FAKE_DISPLAY = True  # Set True to use fake data, False for real database
 
 # Auto-refresh every 60 seconds
 st_autorefresh(interval=60 * 1000, key="datarefresh")
@@ -43,18 +41,13 @@ def generate_fake_dataframe():
     records_flights = []
     records_counts = []
 
-    dates_limits = {
-        "2026-03-27": 8,
-        "2026-03-28": 4,
-        "2026-03-29": 8
-    }
-
-    for date_str, max_count in dates_limits.items():
+    dates = ["2026-03-27", "2026-03-29"]
+    for date_str in dates:
         current_time = datetime.strptime(date_str + " 00:00", "%Y-%m-%d %H:%M")
         end_time = datetime.strptime(date_str + " 23:59", "%Y-%m-%d %H:%M")
 
         while current_time <= end_time:
-            aircraft_count = random.randint(0, max_count)
+            aircraft_count = random.randint(0, 8)
 
             for _ in range(aircraft_count):
                 records_flights.append({
@@ -75,15 +68,6 @@ def generate_fake_dataframe():
 
     flights_df = pd.DataFrame(records_flights)
     counts_df = pd.DataFrame(records_counts)
-
-    # Filter only the 3 desired dates
-    counts_df["date_only"] = counts_df["timestamp"].str[:10]
-    counts_df = counts_df[counts_df["date_only"].isin(DATES_TO_DISPLAY)]
-    counts_df = counts_df.drop(columns=["date_only"])
-
-    flights_df["date_only"] = flights_df["timestamp"].str[:10]
-    flights_df = flights_df[flights_df["date_only"].isin(DATES_TO_DISPLAY)]
-    flights_df = flights_df.drop(columns=["date_only"])
 
     return flights_df, counts_df
 
@@ -124,61 +108,51 @@ with col1:
         counts_df = counts_df.set_index("timestamp")
         counts_df["aircraft_count"] = counts_df["aircraft_count"].astype(int)
 
-        # Column chart: downsample to max 50 points
-        col_limit = 50
-        if len(counts_df) > col_limit:
-            step = len(counts_df) // col_limit
-            col_counts = counts_df.iloc[::step]
-        else:
-            col_counts = counts_df
-
         # -----------------------------
-        # Filter only key hours for line/area charts
-        agg_counts = counts_df.resample("1H").mean()
-        plot_counts = agg_counts[agg_counts.index.hour.isin(KEY_HOURS)]
-        tick_positions = plot_counts.index
-        tick_labels = [f"{ts.strftime('%H:%M')}\n{ts.strftime('%Y-%m-%d')}" for ts in tick_positions]
-
+        # Line & Area side by side
+        # -----------------------------
         chart_col1, chart_col2 = st.columns(2)
 
         # Line Chart
         with chart_col1:
             st.write("### Line Chart")
-            fig1, ax1 = plt.subplots(figsize=(5,3))
-            ax1.plot(plot_counts.index, plot_counts["aircraft_count"], marker='o')
+            fig1, ax1 = plt.subplots(figsize=(5, 3))
+            ax1.plot(counts_df.index, counts_df["aircraft_count"], marker='o')
             ax1.set_xlabel("Time")
             ax1.set_ylabel("Aircraft Count")
             ax1.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax1.set_xticks(tick_positions)
-            ax1.set_xticklabels(tick_labels, rotation=45)
+            plt.xticks(rotation=45)
             st.pyplot(fig1)
 
         # Area Chart
         with chart_col2:
             st.write("### Area Chart")
-            fig2, ax2 = plt.subplots(figsize=(5,3))
-            ax2.fill_between(plot_counts.index, plot_counts["aircraft_count"], alpha=0.5)
-            ax2.plot(plot_counts.index, plot_counts["aircraft_count"])
+            fig2, ax2 = plt.subplots(figsize=(5, 3))
+            ax2.fill_between(counts_df.index, counts_df["aircraft_count"], alpha=0.5)
+            ax2.plot(counts_df.index, counts_df["aircraft_count"])
             ax2.set_xlabel("Time")
             ax2.set_ylabel("Aircraft Count")
             ax2.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax2.set_xticks(tick_positions)
-            ax2.set_xticklabels(tick_labels, rotation=45)
+            plt.xticks(rotation=45)
             st.pyplot(fig2)
 
-        # Column Chart (downsampled)
+        # Column Chart (below)
         st.write("### Column Chart")
-        fig3, ax3 = plt.subplots(figsize=(6,3))
-        x = range(len(col_counts.index))
-        ax3.bar(x, col_counts["aircraft_count"], width=0.5)
+        fig3, ax3 = plt.subplots(figsize=(6, 3))
+
+        x = range(len(counts_df.index))
+        ax3.bar(x, counts_df["aircraft_count"], width=0.5)
+
         ax3.set_xticks(x[::max(1, len(x)//10)])
         ax3.set_xticklabels(
-            col_counts.index.strftime('%H:%M')[::max(1, len(x)//10)],
+            counts_df.index.strftime('%H:%M')[::max(1, len(x)//10)],
             rotation=45
         )
+
         ax3.set_xlabel("Time")
         ax3.set_ylabel("Aircraft Count")
         ax3.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
         st.pyplot(fig3)
     else:
         st.write("No count data available yet.")
@@ -186,6 +160,7 @@ with col1:
 with col2:
     st.subheader("All Recorded Flights in Database")
     if not all_flights.empty:
+        # Remove 'id' column if exists
         display_df = all_flights.drop(columns=["id"], errors="ignore")
         display_df = display_df.rename(columns={
             "icao24": "ICAO24",
