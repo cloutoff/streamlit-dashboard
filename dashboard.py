@@ -115,11 +115,6 @@ with col1:
         counts_df["aircraft_count"] = counts_df["aircraft_count"].astype(int)
 
         # -----------------------------
-        # Massive-data-ready: resample & downsample
-        # -----------------------------
-        # Line & Area charts: aggregate hourly
-        agg_counts = counts_df.resample("1H").mean()
-
         # Column chart: downsample to max 50 points
         col_limit = 50
         if len(counts_df) > col_limit:
@@ -129,8 +124,12 @@ with col1:
             col_counts = counts_df
 
         # -----------------------------
-        # Line & Area side by side (hourly x-axis)
-        # -----------------------------
+        # Line & Area side by side (sparse x-axis: 12,15,18,21)
+        agg_counts = counts_df.resample("1H").mean()
+        tick_hours = [12, 15, 18, 21]
+        tick_positions = [ts for ts in agg_counts.index if ts.hour in tick_hours]
+        tick_labels = [f"{ts.strftime('%H:%M')}\n{ts.strftime('%Y-%m-%d')}" for ts in tick_positions]
+
         chart_col1, chart_col2 = st.columns(2)
 
         # Line Chart
@@ -141,8 +140,8 @@ with col1:
             ax1.set_xlabel("Time")
             ax1.set_ylabel("Aircraft Count")
             ax1.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax1.set_xticks(agg_counts.index)
-            ax1.set_xticklabels([dt.strftime('%H:%M') for dt in agg_counts.index], rotation=45)
+            ax1.set_xticks(tick_positions)
+            ax1.set_xticklabels(tick_labels, rotation=45)
             st.pyplot(fig1)
 
         # Area Chart
@@ -154,8 +153,8 @@ with col1:
             ax2.set_xlabel("Time")
             ax2.set_ylabel("Aircraft Count")
             ax2.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax2.set_xticks(agg_counts.index)
-            ax2.set_xticklabels([dt.strftime('%H:%M') for dt in agg_counts.index], rotation=45)
+            ax2.set_xticks(tick_positions)
+            ax2.set_xticklabels(tick_labels, rotation=45)
             st.pyplot(fig2)
 
         # Column Chart (downsampled)
