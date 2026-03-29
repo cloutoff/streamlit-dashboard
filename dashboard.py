@@ -65,7 +65,7 @@ with col1:
         # Line Chart
         with chart_col1:
             st.write("### Line Chart")
-            fig1, ax1 = plt.subplots(figsize=(5,3))
+            fig1, ax1 = plt.subplots(figsize=(5, 3))
             ax1.plot(counts_df.index, counts_df["aircraft_count"], marker='o')
             ax1.set_xlabel("Time")
             ax1.set_ylabel("Aircraft Count")
@@ -76,7 +76,7 @@ with col1:
         # Area Chart
         with chart_col2:
             st.write("### Area Chart")
-            fig2, ax2 = plt.subplots(figsize=(5,3))
+            fig2, ax2 = plt.subplots(figsize=(5, 3))
             ax2.fill_between(counts_df.index, counts_df["aircraft_count"], alpha=0.5)
             ax2.plot(counts_df.index, counts_df["aircraft_count"])
             ax2.set_xlabel("Time")
@@ -89,7 +89,7 @@ with col1:
         # Column Chart (below)
         # -----------------------------
         st.write("### Column Chart")
-        fig3, ax3 = plt.subplots(figsize=(6,3))
+        fig3, ax3 = plt.subplots(figsize=(6, 3))
 
         x = range(len(counts_df.index))
         ax3.bar(x, counts_df["aircraft_count"], width=0.5)
@@ -114,14 +114,27 @@ with col2:
     all_flights = get_all_flights()
 
     if not all_flights.empty:
-        st.dataframe(all_flights, height=500)
+        # ✅ Remove 'id' column (UI only)
+        display_df = all_flights.drop(columns=["id"], errors="ignore")
+
+        # ✅ Optional: make it look more professional
+        display_df = display_df.rename(columns={
+            "icao24": "ICAO24",
+            "callsign": "Callsign",
+            "latitude": "Latitude",
+            "longitude": "Longitude",
+            "altitude": "Altitude (m)",
+            "timestamp": "Time"
+        })
+
+        st.dataframe(display_df, height=500)
     else:
         st.write("No flight data recorded yet.")
 
 # -----------------------------
 # Map (Historical + Latest)
 # -----------------------------
-st.subheader("All Aircraft Positions in Perak (Historical & Latest)")
+st.subheader("All Aircraft Positions in Perak")
 
 all_flights = get_all_flights()
 
