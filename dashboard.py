@@ -169,29 +169,7 @@ with col1:
         fig3, ax3 = plt.subplots(figsize=(6,3))
         x = range(len(col_counts.index))
         ax3.bar(x, col_counts["aircraft_count"], width=0.5)
-        ax3.set_xticks(x[::max(1, len(x)//10)])
-        ax3.set_xticklabels(
-            col_counts.index.strftime('%H:%M')[::max(1, len(x)//10)],
-            rotation=45
-        )
-        ax3.set_xlabel("Time")
-        ax3.set_ylabel("Aircraft Count")
-        ax3.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-        st.pyplot(fig3)
-    else:
-        st.write("No count data available yet.")
 
-with col2:
-    st.subheader("All Recorded Flights in Database")
-    if not all_flights.empty:
-        display_df = all_flights.drop(columns=["id"], errors="ignore")
-        display_df = display_df.rename(columns={
-            "icao24": "ICAO24",
-            "callsign": "Callsign",
-            "latitude": "Latitude",
-            "longitude": "Longitude",
-            "altitude": "Altitude (m)",
-            "timestamp": "Time"
         })
         st.dataframe(display_df, height=500)
     else:
