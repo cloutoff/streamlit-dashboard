@@ -171,7 +171,7 @@ with col1:
             st.pyplot(fig2)
 
         # Column Chart (downsampled)
-        st.write("### Column Chart")
+        st.write("### Column Chart Today")
         fig3, ax3 = plt.subplots(figsize=(6,3))
         x = range(len(col_counts.index))
         ax3.bar(x, col_counts["aircraft_count"], width=0.5)
