@@ -117,8 +117,8 @@ with col1:
         # -----------------------------
         # Massive-data-ready: resample & downsample
         # -----------------------------
-        # Line & Area charts: resample 30 min
-        agg_counts = counts_df.resample("30T").mean()
+        # Line & Area charts: aggregate hourly
+        agg_counts = counts_df.resample("1H").mean()
 
         # Column chart: downsample to max 50 points
         col_limit = 50
@@ -129,7 +129,7 @@ with col1:
             col_counts = counts_df
 
         # -----------------------------
-        # Line & Area side by side
+        # Line & Area side by side (hourly x-axis)
         # -----------------------------
         chart_col1, chart_col2 = st.columns(2)
 
@@ -141,7 +141,8 @@ with col1:
             ax1.set_xlabel("Time")
             ax1.set_ylabel("Aircraft Count")
             ax1.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            plt.xticks(rotation=45)
+            ax1.set_xticks(agg_counts.index)
+            ax1.set_xticklabels([dt.strftime('%H:%M') for dt in agg_counts.index], rotation=45)
             st.pyplot(fig1)
 
         # Area Chart
@@ -153,7 +154,8 @@ with col1:
             ax2.set_xlabel("Time")
             ax2.set_ylabel("Aircraft Count")
             ax2.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            plt.xticks(rotation=45)
+            ax2.set_xticks(agg_counts.index)
+            ax2.set_xticklabels([dt.strftime('%H:%M') for dt in agg_counts.index], rotation=45)
             st.pyplot(fig2)
 
         # Column Chart (downsampled)
