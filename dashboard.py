@@ -15,8 +15,7 @@ DATABASE_FILE = "perak_flights.db"
 # CONFIG
 # -----------------------------
 USE_FAKE_DISPLAY = True  # True: show fake data; False: use real database
-DATES_TO_DISPLAY = ["2026-03-27", "2026-03-28", "2026-03-29"]
-KEY_HOURS = [12, 15, 18, 21]
+DATES_TO_DISPLAY = ["2026-03-27", "2026-03-28", "2026-03-29"]  # only these 3 dates
 
 # Auto-refresh every 60 seconds
 st_autorefresh(interval=60 * 1000, key="datarefresh")
@@ -43,6 +42,7 @@ def generate_fake_dataframe():
     records_flights = []
     records_counts = []
 
+    # Dates with different max aircraft counts
     dates_limits = {
         "2026-03-27": 8,
         "2026-03-28": 4,
@@ -76,7 +76,7 @@ def generate_fake_dataframe():
     flights_df = pd.DataFrame(records_flights)
     counts_df = pd.DataFrame(records_counts)
 
-    # Filter only the 3 desired dates
+    # Filter only desired 3 dates
     counts_df["date_only"] = counts_df["timestamp"].str[:10]
     counts_df = counts_df[counts_df["date_only"].isin(DATES_TO_DISPLAY)]
     counts_df = counts_df.drop(columns=["date_only"])
@@ -124,6 +124,7 @@ with col1:
         counts_df = counts_df.set_index("timestamp")
         counts_df["aircraft_count"] = counts_df["aircraft_count"].astype(int)
 
+        # -----------------------------
         # Column chart: downsample to max 50 points
         col_limit = 50
         if len(counts_df) > col_limit:
@@ -133,9 +134,11 @@ with col1:
             col_counts = counts_df
 
         # -----------------------------
-        # Filter only key hours for line/area charts
+        # Line & Area charts (key times only)
         agg_counts = counts_df.resample("1H").mean()
-        plot_counts = agg_counts[agg_counts.index.hour.isin(KEY_HOURS)]
+        key_hours = [12, 15, 18, 21]
+        tick_positions = [ts for ts in agg_counts.index if ts.hour in key_hours]
+        tick_labels = [f"{ts.strftime('%H:%M')}\n{ts.strftime('%Y-%m-%d')}" for ts in tick_positions]
 
         chart_col1, chart_col2 = st.columns(2)
 
@@ -143,30 +146,31 @@ with col1:
         with chart_col1:
             st.write("### Line Chart")
             fig1, ax1 = plt.subplots(figsize=(5,3))
-            ax1.plot(plot_counts.index, plot_counts["aircraft_count"], marker='o')
-            ax1.set_xlabel("")  # remove x-axis label
+            ax1.plot(agg_counts.index, agg_counts["aircraft_count"], marker='o')
+            ax1.set_xlabel("Time")
             ax1.set_ylabel("Aircraft Count")
             ax1.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax1.set_xticks([])  # remove x-axis ticks
-            ax1.set_xticklabels([])  # remove x-axis labels
+            ax1.set_xticks(tick_positions)
+            ax1.set_xticklabels(tick_labels, rotation=45)
             st.pyplot(fig1)
 
         # Area Chart
         with chart_col2:
             st.write("### Area Chart")
             fig2, ax2 = plt.subplots(figsize=(5,3))
-            ax2.fill_between(plot_counts.index, plot_counts["aircraft_count"], alpha=0.5)
-            ax2.plot(plot_counts.index, plot_counts["aircraft_count"])
-            ax2.set_xlabel("")  # remove x-axis label
+            ax2.fill_between(agg_counts.index, agg_counts["aircraft_count"], alpha=0.5)
+            ax2.plot(agg_counts.index, agg_counts["aircraft_count"])
+            ax2.set_xlabel("Time")
             ax2.set_ylabel("Aircraft Count")
             ax2.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax2.set_xticks([])  # remove x-axis ticks
-            ax2.set_xticklabels([])  # remove x-axis labels
+            ax2.set_xticks(tick_positions)
+            ax2.set_xticklabels(tick_labels, rotation=45)
             st.pyplot(fig2)
 
         # Column Chart (downsampled)
         st.write("### Column Chart")
         fig3, ax3 = plt.subplots(figsize=(6,3))
+
         x = range(len(col_counts.index))
         ax3.bar(x, col_counts["aircraft_count"], width=0.5)
         ax3.set_xticks(x[::max(1, len(x)//10)])
@@ -200,7 +204,7 @@ with col2:
 # -----------------------------
 # Map (Historical + Latest)
 # -----------------------------
-st.subheader("All Aircraft Positions in Perak")
+st.subheader("All Aircraft Positions in Perak (Historical & Latest)")
 
 m = folium.Map(location=[4.75, 101.0], zoom_start=7)
 
